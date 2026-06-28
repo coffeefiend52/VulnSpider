@@ -60,8 +60,8 @@ class CrawlRequestSchema(Schema):
 crawl_schema = CrawlRequestSchema()
 
 
-@app.route('/crawl/stream', methods=['POST'])
-def crawl_stream():
+@app.route('/crawl', methods=['POST'])
+def crawl():
     try:
         params = crawl_schema.load(request.get_json())
     except ValidationError as err:
