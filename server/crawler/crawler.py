@@ -188,16 +188,3 @@ def crawl_website_stream(start_url, base_url, headers=None, max_pages=50, max_de
                     logger.warning("Failed to fetch %s: %s", url, e)
 
     yield {"type": "done", "certificate": certificate, "robots_txt": robots_txt}
-
-
-def crawl_website(start_url, base_url, headers=None, max_pages=50, max_depth=None, respect_robots=False, max_workers=5, model=OLLAMA_MODEL):
-    sites = []
-    certificate = None
-    robots_txt = None
-    for event in crawl_website_stream(start_url, base_url, headers=headers, max_pages=max_pages, max_depth=max_depth, respect_robots=respect_robots, max_workers=max_workers, model=model):
-        if event["type"] == "page":
-            sites.append(event["page"])
-        elif event["type"] == "done":
-            certificate = event["certificate"]
-            robots_txt = event["robots_txt"]
-    return {"certificate": certificate, "sites": sites, "robots_txt": robots_txt}
