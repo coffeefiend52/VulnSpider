@@ -4,7 +4,7 @@ import { IconCheck, IconX } from '@tabler/icons-react';
 import { API_URL } from '../api';
 import type { RobotsTxtResult, ScanData, Site } from '../types';
 
-// SSE event shapes streamed from /crawl/stream
+// SSE event shapes streamed from /crawl
 type SsePageEvent = { type: 'page'; page: Site };
 type SseDoneEvent = { type: 'done'; certificate: string; robots_txt: RobotsTxtResult | null };
 type SseErrorEvent = { type: 'error'; message: string };
@@ -37,7 +37,7 @@ export function useScan() {
     });
 
     try {
-      const response = await fetch(`${API_URL}/crawl/stream`, {
+      const response = await fetch(`${API_URL}/crawl`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -82,6 +82,9 @@ export function useScan() {
                 ...event.page,
                 code_analysis: Array.isArray(event.page.code_analysis)
                   ? event.page.code_analysis
+                  : [],
+                code_analysis_errors: Array.isArray(event.page.code_analysis_errors)
+                  ? event.page.code_analysis_errors
                   : [],
                 header_analysis: Array.isArray(event.page.header_analysis)
                   ? event.page.header_analysis

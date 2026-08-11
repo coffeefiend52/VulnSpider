@@ -59,6 +59,12 @@ export function PathCard({ site, isSelected, onClick }: PathCardProps) {
           ⚠️ {stats.vulnerabilities} vulnerabilities
         </Text>
       )}
+      {site.code_analysis_errors.length > 0 && (
+        <Text c="yellow.5" size="xs">
+          ⚠ {site.code_analysis_errors.length} analysis error
+          {site.code_analysis_errors.length !== 1 ? 's' : ''}
+        </Text>
+      )}
       {maxSeverity !== 'safe' && (
         <Badge color={severityColor[maxSeverity]} mt={4} size="xs" variant="light">
           {maxSeverity.toUpperCase()}

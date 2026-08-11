@@ -24,9 +24,15 @@ _ROUTER_TO_TAGS = {'router-link', 'link', 'navlink'}
 
 
 def fetch_linked_scripts(soup, page_url, headers=None, model=OLLAMA_MODEL):
-    """Fetch and scan same-domain JS files referenced by <script src>."""
+    """Fetch and scan same-domain JS files referenced by <script src>.
+
+    Returns a (findings, errors) tuple — *errors* holds one entry per script
+    whose LLM scan failed (e.g. a timeout or malformed model response), so
+    callers can surface it instead of treating the script as clean.
+    """
     parsed_page = urlparse(page_url)
     results = []
+    errors = []
 
     for tag in soup.find_all('script', src=True):
         src = tag['src']
@@ -40,14 +46,17 @@ def fetch_linked_scripts(soup, page_url, headers=None, model=OLLAMA_MODEL):
         try:
             js_response = safe_get(full_url, headers=headers, timeout=10)
             js_response.raise_for_status()
-            script_findings = scan_code_for_vulnerabilities(js_response.text, content_type="js", model=model).get("results", [])
-            for finding in script_findings:
+            scan = scan_code_for_vulnerabilities(js_response.text, content_type="js", model=model)
+            if "error" in scan:
+                errors.append({"source": parsed_src.path, "message": scan["error"]})
+            findings = scan.get("results", [])
+            for finding in findings:
                 finding["source"] = parsed_src.path
-            results.extend(script_findings)
+            results.extend(findings)
         except requests.RequestException as e:
             logger.warning("Failed to fetch linked script %s: %s", full_url, e)
 
-    return results
+    return results, errors
 
 
 def process_page(url, headers=None, model=OLLAMA_MODEL):
@@ -59,8 +68,12 @@ def process_page(url, headers=None, model=OLLAMA_MODEL):
     # Parse once; reuse soup for link collection and script fetching
     soup = BeautifulSoup(raw_html, 'html.parser')
 
-    html_findings = scan_code_for_vulnerabilities(raw_html, model=model).get("results", [])
-    script_findings = fetch_linked_scripts(soup, url, headers=headers, model=model)
+    html_scan = scan_code_for_vulnerabilities(raw_html, model=model)
+    html_findings = html_scan.get("results", [])
+    script_findings, code_analysis_errors = fetch_linked_scripts(soup, url, headers=headers, model=model)
+
+    if "error" in html_scan:
+        code_analysis_errors.insert(0, {"source": "page", "message": html_scan["error"]})
 
     page_data = {
         "path": parsed_url.path or "/",
@@ -68,6 +81,7 @@ def process_page(url, headers=None, model=OLLAMA_MODEL):
         "links": [],
         "response_headers": [f"{k}: {v}" for k, v in response.headers.items()],
         "code_analysis": html_findings + script_findings,
+        "code_analysis_errors": code_analysis_errors,
         "header_analysis": analyze_headers(dict(response.headers)),
         "cookie_analysis": analyze_cookies_from_response(response),
     }

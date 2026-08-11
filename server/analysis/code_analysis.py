@@ -13,8 +13,21 @@ OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5-coder:7b")
 # Maximum number of characters sent to the model per request (~32 KB)
 _MAX_INPUT_CHARS = 32_768
 
+# ollama's own client defaults to no timeout at all, so a hung backend would
+# otherwise block the scanning thread indefinitely.
+_OLLAMA_TIMEOUT_SECONDS = int(os.environ.get("OLLAMA_TIMEOUT_SECONDS", "120"))
+
+
+def _new_ollama(model: str) -> OllamaLLM:
+    return OllamaLLM(
+        model=model,
+        base_url=OLLAMA_BASE_URL,
+        client_kwargs={"timeout": _OLLAMA_TIMEOUT_SECONDS},
+    )
+
+
 # Module-level singleton for the default model — created once, reused for every scan
-_ollama = OllamaLLM(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL)
+_ollama = _new_ollama(OLLAMA_MODEL)
 
 # Cache of additional model instances keyed by model name
 _ollama_cache: dict[str, OllamaLLM] = {OLLAMA_MODEL: _ollama}
@@ -23,7 +36,7 @@ _ollama_cache: dict[str, OllamaLLM] = {OLLAMA_MODEL: _ollama}
 def _get_ollama(model: str) -> OllamaLLM:
     """Return a cached OllamaLLM instance for *model*, creating one if necessary."""
     if model not in _ollama_cache:
-        _ollama_cache[model] = OllamaLLM(model=model, base_url=OLLAMA_BASE_URL)
+        _ollama_cache[model] = _new_ollama(model)
     return _ollama_cache[model]
 
 
@@ -143,7 +156,13 @@ Return ONLY a valid JSON object in this exact format, with no extra text:
             "type": <"comment"|"form"|"link"|"package"|"secret"|"script:external"|"script:internal"|"script:in-element">,
             "lines": <line number(s) in the submitted content where this was found>,
             "content": <the relevant code snippet>,
-            "vulnerabilities": [<list of vulnerability description strings, empty array if none>]
+            "vulnerabilities": [
+                {{
+                    "severity": <"critical"|"high"|"medium"|"low"|"info">,
+                    "description": <description of the vulnerability>,
+                    "recommendation": <how to fix it>
+                }}
+            ]
         }}
     ]
 }}

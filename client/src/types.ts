@@ -50,12 +50,18 @@ export interface CookieFinding {
   issues: CookieIssue[];
 }
 
+export interface CodeAnalysisError {
+  source: string;
+  message: string;
+}
+
 export interface Site {
   path: string;
   html_content: string;
   links: Link[];
   response_headers: Record<string, string>;
   code_analysis: CodeFinding[];
+  code_analysis_errors: CodeAnalysisError[];
   header_analysis: HeaderFinding[];
   cookie_analysis: CookieFinding[];
 }
