@@ -1,4 +1,4 @@
-.PHONY: install lint lint-fix format format-check check
+.PHONY: install lint lint-fix format format-check test check
 
 install:
 	pip install -r requirements-dev.txt
@@ -15,4 +15,7 @@ format:
 format-check:
 	black --check .
 
-check: lint format-check
+test:
+	pytest
+
+check: lint format-check test
