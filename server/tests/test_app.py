@@ -15,6 +15,19 @@ def _sse_events(response):
     ]
 
 
+def _valid_page(path="/"):
+    return {
+        "path": path,
+        "html_content": "",
+        "links": [],
+        "response_headers": [],
+        "code_analysis": [],
+        "code_analysis_errors": [],
+        "header_analysis": [],
+        "cookie_analysis": [],
+    }
+
+
 @pytest.fixture
 def client(monkeypatch):
     # Resolve every hostname to a public address so the SSRF check passes by default.
@@ -32,18 +45,7 @@ def client(monkeypatch):
 class TestCrawlEndpoint:
     def test_streams_page_and_done_events(self, client, monkeypatch):
         def fake_crawl_website_stream(url, base_url, **kwargs):
-            yield {
-                "type": "page",
-                "page": {
-                    "path": "/",
-                    "html_content": "",
-                    "links": [],
-                    "response_headers": [],
-                    "code_analysis": [],
-                    "header_analysis": [],
-                    "cookie_analysis": [],
-                },
-            }
+            yield {"type": "page", "page": _valid_page()}
             yield {"type": "done", "certificate": None, "robots_txt": None}
 
         monkeypatch.setattr(
@@ -63,7 +65,7 @@ class TestCrawlEndpoint:
 
     def test_generator_error_becomes_sse_error_event(self, client, monkeypatch):
         def fake_crawl_website_stream(url, base_url, **kwargs):
-            yield {"type": "page", "page": {"path": "/"}}
+            yield {"type": "page", "page": _valid_page()}
             raise RuntimeError("boom")
 
         monkeypatch.setattr(
@@ -74,6 +76,24 @@ class TestCrawlEndpoint:
 
         events = _sse_events(response)
         assert events[-1] == {"type": "error", "message": "boom"}
+
+    def test_page_event_that_violates_the_schema_becomes_an_sse_error(
+        self, client, monkeypatch
+    ):
+        def fake_crawl_website_stream(url, base_url, **kwargs):
+            # Missing several required Site fields — simulates a page_data dict
+            # that has drifted from schemas.Site.
+            yield {"type": "page", "page": {"path": "/"}}
+
+        monkeypatch.setattr(
+            app_module, "crawl_website_stream", fake_crawl_website_stream
+        )
+
+        response = client.post("/crawl", json={"url": "https://example.com"})
+
+        events = _sse_events(response)
+        assert events == [{"type": "error", "message": events[0]["message"]}]
+        assert "html_content" in events[0]["message"]
 
     def test_rejects_invalid_url(self, client):
         response = client.post("/crawl", json={"url": "not-a-url"})

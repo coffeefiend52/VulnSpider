@@ -1,89 +1,29 @@
-export type SeverityLevel = 'critical' | 'high' | 'medium' | 'low' | 'info';
+export type {
+  CodeAnalysisError,
+  CodeFinding,
+  CookieFinding,
+  CookieIssue,
+  HeaderFinding,
+  Link,
+  ModelsResponse,
+  RobotsTxtResult,
+  RobotsTxtRule,
+  Site,
+  SseDoneEvent,
+  SseErrorEvent,
+  SsePageEvent,
+  Vulnerability,
+} from './types.generated';
 
-export type FindingType =
-  | 'comment'
-  | 'form'
-  | 'link'
-  | 'package'
-  | 'secret'
-  | 'script:external'
-  | 'script:internal'
-  | 'script:in-element';
+import type { CodeFinding, RobotsTxtResult, SseDoneEvent, Site, Vulnerability } from './types.generated';
 
-export interface Vulnerability {
-  severity: SeverityLevel;
-  description: string;
-  recommendation: string;
-}
-
-export interface CodeFinding {
-  type: FindingType;
-  content: string;
-  lines: number | number[];
-  vulnerabilities: Vulnerability[];
-}
-
-export interface Link {
-  type: 'absolute' | 'relative';
-  link: string;
-}
-
-export interface HeaderFinding {
-  header: string;
-  present: boolean;
-  value: string | null;
-  severity: SeverityLevel;
-  description: string;
-  recommendation: string;
-}
-
-export interface CookieIssue {
-  severity: SeverityLevel;
-  attribute: string;
-  description: string;
-  recommendation: string;
-}
-
-export interface CookieFinding {
-  name: string;
-  raw: string;
-  issues: CookieIssue[];
-}
-
-export interface CodeAnalysisError {
-  source: string;
-  message: string;
-}
-
-export interface Site {
-  path: string;
-  html_content: string;
-  links: Link[];
-  response_headers: Record<string, string>;
-  code_analysis: CodeFinding[];
-  code_analysis_errors: CodeAnalysisError[];
-  header_analysis: HeaderFinding[];
-  cookie_analysis: CookieFinding[];
-}
+export type SeverityLevel = Vulnerability['severity'];
+export type FindingType = CodeFinding['type'];
 
 export interface ScanData {
-  certificate: string;
+  certificate: SseDoneEvent['certificate'];
   sites: Site[];
   robots_txt: RobotsTxtResult | null;
-}
-
-export interface RobotsTxtRule {
-  user_agent: string;
-  disallowed: string[];
-  allowed: string[];
-}
-
-export interface RobotsTxtResult {
-  found: boolean;
-  raw: string | null;
-  rules: RobotsTxtRule[];
-  sitemaps: string[];
-  crawl_delay: number | null;
 }
 
 export interface PathCardStats {

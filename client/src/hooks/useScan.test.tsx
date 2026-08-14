@@ -27,8 +27,9 @@ const samplePage = {
   path: '/',
   html_content: '',
   links: [],
-  response_headers: {},
+  response_headers: [],
   code_analysis: [],
+  code_analysis_errors: [],
   header_analysis: [],
   cookie_analysis: [],
 };
@@ -42,7 +43,7 @@ describe('useScan', () => {
     const fetchMock = vi.fn().mockResolvedValue(
       sseResponse(
         `data: ${JSON.stringify({ type: 'page', page: samplePage })}\n\n` +
-          `data: ${JSON.stringify({ type: 'done', certificate: '', robots_txt: null })}\n\n`,
+          `data: ${JSON.stringify({ type: 'done', certificate: null, robots_txt: null })}\n\n`,
       ),
     );
     vi.stubGlobal('fetch', fetchMock);
@@ -60,10 +61,11 @@ describe('useScan', () => {
   });
 
   it('streams page events into scanData as they arrive', async () => {
+    const certificate = { notAfter: 'Jan 1 00:00:00 2030 GMT', expired: false, issues: [] };
     const fetchMock = vi.fn().mockResolvedValue(
       sseResponse(
         `data: ${JSON.stringify({ type: 'page', page: samplePage })}\n\n` +
-          `data: ${JSON.stringify({ type: 'done', certificate: 'cert', robots_txt: null })}\n\n`,
+          `data: ${JSON.stringify({ type: 'done', certificate, robots_txt: null })}\n\n`,
       ),
     );
     vi.stubGlobal('fetch', fetchMock);
@@ -78,7 +80,7 @@ describe('useScan', () => {
       expect(result.current.scanData?.sites).toHaveLength(1);
     });
     expect(result.current.scanData?.sites[0].path).toBe('/');
-    expect(result.current.scanData?.certificate).toBe('cert');
+    expect(result.current.scanData?.certificate).toEqual(certificate);
     expect(result.current.loading).toBe(false);
   });
 });

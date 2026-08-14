@@ -1,0 +1,441 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "CodeFinding": {
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "lines": {
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          ]
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "comment",
+            "form",
+            "link",
+            "package",
+            "secret",
+            "script:external",
+            "script:internal",
+            "script:in-element"
+          ]
+        },
+        "vulnerabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Vulnerability"
+          }
+        }
+      },
+      "type": "object",
+      "required": [
+        "content",
+        "lines",
+        "type",
+        "vulnerabilities"
+      ],
+      "additionalProperties": false
+    },
+    "Vulnerability": {
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "recommendation": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "info"
+          ]
+        }
+      },
+      "type": "object",
+      "required": [
+        "description",
+        "recommendation",
+        "severity"
+      ],
+      "additionalProperties": false
+    },
+    "CodeAnalysisError": {
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "message",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "CookieFinding": {
+      "properties": {
+        "issues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CookieIssue"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "raw": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "issues",
+        "name",
+        "raw"
+      ],
+      "additionalProperties": false
+    },
+    "CookieIssue": {
+      "properties": {
+        "attribute": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "recommendation": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "info"
+          ]
+        }
+      },
+      "type": "object",
+      "required": [
+        "attribute",
+        "description",
+        "recommendation",
+        "severity"
+      ],
+      "additionalProperties": false
+    },
+    "HeaderFinding": {
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "header": {
+          "type": "string"
+        },
+        "present": {
+          "type": "boolean"
+        },
+        "recommendation": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "info"
+          ]
+        },
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object",
+      "required": [
+        "description",
+        "header",
+        "present",
+        "recommendation",
+        "severity",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "Link": {
+      "properties": {
+        "link": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "absolute",
+            "relative"
+          ]
+        }
+      },
+      "type": "object",
+      "required": [
+        "link",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "Site": {
+      "properties": {
+        "code_analysis": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CodeFinding"
+          }
+        },
+        "code_analysis_errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CodeAnalysisError"
+          }
+        },
+        "cookie_analysis": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CookieFinding"
+          }
+        },
+        "header_analysis": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/HeaderFinding"
+          }
+        },
+        "html_content": {
+          "type": "string"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Link"
+          }
+        },
+        "path": {
+          "type": "string"
+        },
+        "response_headers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "type": "object",
+      "required": [
+        "code_analysis",
+        "code_analysis_errors",
+        "cookie_analysis",
+        "header_analysis",
+        "html_content",
+        "links",
+        "path",
+        "response_headers"
+      ],
+      "additionalProperties": false
+    },
+    "SsePageEvent": {
+      "properties": {
+        "page": {
+          "$ref": "#/definitions/Site"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "page"
+          ]
+        }
+      },
+      "type": "object",
+      "required": [
+        "page",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "RobotsTxtResult": {
+      "properties": {
+        "crawl_delay": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "found": {
+          "type": "boolean"
+        },
+        "raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RobotsTxtRule"
+          }
+        },
+        "sitemaps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "type": "object",
+      "required": [
+        "crawl_delay",
+        "found",
+        "raw",
+        "rules",
+        "sitemaps"
+      ],
+      "additionalProperties": false
+    },
+    "RobotsTxtRule": {
+      "properties": {
+        "allowed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "disallowed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "user_agent": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "allowed",
+        "disallowed",
+        "user_agent"
+      ],
+      "additionalProperties": false
+    },
+    "SseDoneEvent": {
+      "properties": {
+        "certificate": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true
+        },
+        "robots_txt": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RobotsTxtResult"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "done"
+          ]
+        }
+      },
+      "type": "object",
+      "required": [
+        "certificate",
+        "robots_txt",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "SseErrorEvent": {
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "error"
+          ]
+        }
+      },
+      "type": "object",
+      "required": [
+        "message",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "ModelsResponse": {
+      "properties": {
+        "default": {
+          "type": "string"
+        },
+        "models": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "type": "object",
+      "required": [
+        "default",
+        "models"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "properties": {
+    "SsePageEvent": {
+      "$ref": "#/definitions/SsePageEvent"
+    },
+    "SseDoneEvent": {
+      "$ref": "#/definitions/SseDoneEvent"
+    },
+    "SseErrorEvent": {
+      "$ref": "#/definitions/SseErrorEvent"
+    },
+    "ModelsResponse": {
+      "$ref": "#/definitions/ModelsResponse"
+    }
+  }
+}

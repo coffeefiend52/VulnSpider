@@ -11,6 +11,7 @@ from marshmallow import Schema, fields, ValidationError, post_load
 from analysis.code_analysis import OLLAMA_BASE_URL, OLLAMA_MODEL
 from crawler.crawler import crawl_website_stream
 from crawler.url_utils import _is_ssrf_safe
+from schemas import SSE_EVENT_SCHEMAS, ModelsResponse
 
 
 logging.basicConfig(
@@ -60,6 +61,20 @@ class CrawlRequestSchema(Schema):
 crawl_schema = CrawlRequestSchema()
 
 
+def _validate_sse_event(event: dict) -> dict:
+    """Round-trip *event* through its schema (schemas.py) before it's sent.
+
+    Dumping strips anything that isn't part of the documented contract, and
+    reloading enforces that every required field is actually present, so a
+    payload that drifts from the schema fails loudly here instead of quietly
+    reaching the client malformed.
+    """
+    schema = SSE_EVENT_SCHEMAS[event["type"]]()
+    dumped = schema.dump(event)
+    schema.load(dumped)
+    return dumped
+
+
 @app.route('/crawl', methods=['POST'])
 def crawl():
     try:
@@ -78,9 +93,10 @@ def crawl():
                 respect_robots=params["respect_robots"],
                 model=params["model"],
             ):
-                yield f"data: {json.dumps(event)}\n\n"
+                yield f"data: {json.dumps(_validate_sse_event(event))}\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            error_event = _validate_sse_event({"type": "error", "message": str(e)})
+            yield f"data: {json.dumps(error_event)}\n\n"
 
     return Response(
         stream_with_context(generate()),
@@ -98,7 +114,9 @@ def list_models():
         resp = http_client.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=5)
         resp.raise_for_status()
         models = [m["name"] for m in resp.json().get("models", [])]
-        return jsonify({"models": models, "default": OLLAMA_MODEL}), 200
+        payload = ModelsResponse().dump({"models": models, "default": OLLAMA_MODEL})
+        ModelsResponse().load(payload)
+        return jsonify(payload), 200
     except http_client.RequestException as e:
         logger.warning("Failed to reach Ollama API: %s", e)
         return jsonify({"error": "Could not reach Ollama API", "models": [], "default": OLLAMA_MODEL}), 502

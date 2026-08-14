@@ -2,12 +2,8 @@ import { useState } from 'react';
 import { notifications } from '@mantine/notifications';
 import { IconCheck, IconX } from '@tabler/icons-react';
 import { API_URL } from '../api';
-import type { RobotsTxtResult, ScanData, Site } from '../types';
+import type { ScanData, Site, SseDoneEvent, SseErrorEvent, SsePageEvent } from '../types';
 
-// SSE event shapes streamed from /crawl
-type SsePageEvent = { type: 'page'; page: Site };
-type SseDoneEvent = { type: 'done'; certificate: string; robots_txt: RobotsTxtResult | null };
-type SseErrorEvent = { type: 'error'; message: string };
 type SseEvent = SsePageEvent | SseDoneEvent | SseErrorEvent;
 
 export function useScan() {
@@ -96,7 +92,7 @@ export function useScan() {
               pageCount++;
               setScanProgress(pageCount);
               setScanData((prev) => {
-                const base = prev ?? { certificate: '', sites: [], robots_txt: null };
+                const base = prev ?? { certificate: null, sites: [], robots_txt: null };
                 return { ...base, sites: [...base.sites, site] };
               });
               if (firstPage) {
